@@ -1,2 +1,2 @@
 
-sudo /Applications/touchcursor-mac.app/Contents/MacOS/touchcursor-mac
+sudo /Applications/KeyMapping.app/Contents/MacOS/KeyMapping

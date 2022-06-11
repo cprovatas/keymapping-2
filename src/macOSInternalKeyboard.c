@@ -91,12 +91,7 @@ int bindMacOSInternalKeyboard(IOHIDManagerRef hidManager)
  */
 static int isRepeatable(int code)
 {
-    if (code == KEY_ENTER || code == KEY_BACKSPACE || code == KEY_DELETE) {
-        return 1;
-    }
-
-    if (isModifier(code))
-    {
+    if (code == KEY_CAPSLOCK) {
         return 0;
     }
     return 1;
@@ -111,7 +106,8 @@ static void* repeatLoop(void* arg)
     usleep(initialKeyRepeatDelay); // microseconds
     while (repeatThread == pthread_self())
     {
-        processKey(0, code, 2);
+        processKey(0, code, 0);
+        processKey(0, code, 1);
         usleep(keyRepeatDelay);
     }
     free(arg);

@@ -17,15 +17,6 @@ enum states state = idle;
 
 
 /**
- * Checks if the key has been mapped.
- */
-static int isMapped(int code)
-{
-    // return keymap[code] != 0;
-    return false;
-}
-
-/**
  * Converts input key to touch cursor key.
  */
 static int convert(int code)
@@ -47,52 +38,12 @@ void processKey(int type, int code, int value)
             break;
 
         case delay: // 1
-            if (isMapped(code))
-            {
-                state = map;
-                if (isDown(value))
-                {
-                    if (lengthOfQueue() != 0)
-                    {
-                        emit(0, convert(peek()), 1);
-                    }
-                    enqueue(code);
-                    emit(0, convert(code), value);
-                }
-                else
-                {
-                    int length = lengthOfQueue();
-                    for (int i = 0; i < length; i++)
-                    {
-                        emit(0, convert(dequeue()), 1);
-                    }
-                    emit(0, convert(code), value);
-                }
-            }
-            else
-            {
-                state = map;
-                emit(0, code, value);
-            }
+            state = map;
+            emit(0, code, value);
             break;
 
-        case map: // 2
-            if (isMapped(code))
-            {
-                if (isDown(value))
-                {
-                    enqueue(code);
-                    emit(0, convert(code), value);
-                }
-                else
-                {
-                    emit(0, convert(code), value);
-                }
-            }
-            else
-            {
-                emit(0, code, value);
-            }
+        case map: // 1
+            emit(0, code, value);
             break;
     }
     //printf("processKey: state=%i\n", state);
