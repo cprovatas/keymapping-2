@@ -43,7 +43,7 @@
 		3E4576AF2831D07C004AB9E3 /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
 		3E4576B12831F587004AB9E3 /* setup.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = setup.sh; sourceTree = "<group>"; };
 		F6D12F2E263A6DA5007F3DE1 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
-		F6DA55452635E23E00146999 /* touchcursor-mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "touchcursor-mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6DA55452635E23E00146999 /* KeyMapping.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KeyMapping.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6DA55482635E23E00146999 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F6DA554A2635E23E00146999 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		F6DA554C2635E24100146999 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -112,7 +112,7 @@
 		F6DA55462635E23E00146999 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				F6DA55452635E23E00146999 /* touchcursor-mac.app */,
+				F6DA55452635E23E00146999 /* KeyMapping.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -185,9 +185,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		F6DA55442635E23E00146999 /* touchcursor-mac */ = {
+		F6DA55442635E23E00146999 /* KeyMapping */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F6DA55582635E24100146999 /* Build configuration list for PBXNativeTarget "touchcursor-mac" */;
+			buildConfigurationList = F6DA55582635E24100146999 /* Build configuration list for PBXNativeTarget "KeyMapping" */;
 			buildPhases = (
 				F6DA55412635E23E00146999 /* Sources */,
 				F6DA55422635E23E00146999 /* Frameworks */,
@@ -197,9 +197,9 @@
 			);
 			dependencies = (
 			);
-			name = "touchcursor-mac";
+			name = KeyMapping;
 			productName = "touchcursor-mac";
-			productReference = F6DA55452635E23E00146999 /* touchcursor-mac.app */;
+			productReference = F6DA55452635E23E00146999 /* KeyMapping.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -230,7 +230,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				F6DA55442635E23E00146999 /* touchcursor-mac */,
+				F6DA55442635E23E00146999 /* KeyMapping */,
 			);
 		};
 /* End PBXProject section */
@@ -428,7 +428,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.charltonprovatas.KeyMapping;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cprovatas.KeyMapping;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = interface/bridgingHeader.h;
@@ -458,7 +458,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.charltonprovatas.KeyMapping;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cprovatas.KeyMapping;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = interface/bridgingHeader.h;
@@ -478,7 +478,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F6DA55582635E24100146999 /* Build configuration list for PBXNativeTarget "touchcursor-mac" */ = {
+		F6DA55582635E24100146999 /* Build configuration list for PBXNativeTarget "KeyMapping" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F6DA55592635E24100146999 /* Debug */,

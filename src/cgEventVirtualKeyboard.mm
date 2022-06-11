@@ -396,6 +396,20 @@ void sendCGEvent(int type, int code, int value)
         return;
     }
 
+    if (code == KEY_CAPSLOCK) {
+        if (isDown(value))
+        {
+            if (modifiers & kCGEventFlagMaskAlphaShift)
+            {
+                modifiers &= ~kCGEventFlagMaskAlphaShift;
+            }
+            else
+            {
+                modifiers |= kCGEventFlagMaskAlphaShift;
+            }
+        }
+    }
+
     //printf("sendCGEvent: type=%i code=%i value=%i\n", type, code, value);
     // Update the modifier state
     if (isModifier(code) || code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)
