@@ -94,6 +94,10 @@ static int isRepeatable(int code)
     if (code == KEY_CAPSLOCK) {
         return 0;
     }
+
+    if (isModifier(code)) {
+        return 0;
+    }
     return 1;
 }
 
