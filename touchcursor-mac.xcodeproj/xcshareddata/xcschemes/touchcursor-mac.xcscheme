@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F6DA55442635E23E00146999"
-               BuildableName = "touchcursor-mac.app"
-               BlueprintName = "touchcursor-mac"
+               BuildableName = "KeyMapping.app"
+               BlueprintName = "KeyMapping"
                ReferencedContainer = "container:touchcursor-mac.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,8 +46,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6DA55442635E23E00146999"
-            BuildableName = "touchcursor-mac.app"
-            BlueprintName = "touchcursor-mac"
+            BuildableName = "KeyMapping.app"
+            BlueprintName = "KeyMapping"
             ReferencedContainer = "container:touchcursor-mac.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -63,8 +63,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6DA55442635E23E00146999"
-            BuildableName = "touchcursor-mac.app"
-            BlueprintName = "touchcursor-mac"
+            BuildableName = "KeyMapping.app"
+            BlueprintName = "KeyMapping"
             ReferencedContainer = "container:touchcursor-mac.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

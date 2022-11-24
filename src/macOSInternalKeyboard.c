@@ -18,6 +18,7 @@ static useconds_t keyRepeatDelay = 250000;
 
 static pthread_t repeatThread;
 static int repeatCode;
+static bool isCheapAmazonKeyboard;
 
 /**
  * Gets the system default key delays.
@@ -44,6 +45,28 @@ static void getKeyDelays(void)
     }
 }
 
+int captureKeyboard(IOHIDDeviceRef inDevice) {
+    // Open the device and capture all input
+    printf("info: capturing the keyboard... ");
+    // Use kIOHIDOptionsTypeNone to capture events without interrupting the device
+    // Use kIOHIDOptionsTypeSeizeDevice to capture the device and all inputs
+    IOReturn result = IOHIDDeviceOpen(inDevice, kIOHIDOptionsTypeSeizeDevice);
+    if (result != kIOReturnSuccess)
+    {
+        printf("\nerror: IOHIDDeviceOpen: %s\n", getIOReturnString(result));
+        return 0;
+    }
+    device = inDevice;
+    // Register the input value callback
+    IOHIDDeviceRegisterInputValueCallback(
+        device,
+        macOSKeyboardInputValueCallback,
+        NULL);
+    getKeyDelays();
+    printf("success\n");
+    return 1;
+}
+
 /**
  * Binds the macOS internal keyboard.
  */
@@ -54,34 +77,25 @@ int bindMacOSInternalKeyboard(IOHIDManagerRef hidManager)
     CFIndex deviceCount = CFSetGetCount(deviceSet);
     IOHIDDeviceRef* devices = calloc(deviceCount, sizeof(IOHIDDeviceRef));
     CFSetGetValues(deviceSet, (const void **)devices);
+    IOHIDDeviceRef preferredDevice = NULL;
     // Iterate devices
     for (CFIndex i = 0; i < deviceCount; i++)
     {
         // Check if this is the apple keyboard, expand this later to use a GUI selection
         uint32_t vendorID = getVendorID(devices[i]);
-        printDeviceInformation(devices[i], false, false, false, false);
-        if (vendorID == appleVendorID)
+
+        if (vendorID == cheapAmazonKeyboardID) {
+            preferredDevice = devices[i];
+            isCheapAmazonKeyboard = true;
+        }
+        else if (vendorID == appleVendorID && !preferredDevice)
         {
-            // Open the device and capture all input
-            printf("info: capturing the keyboard... ");
-            // Use kIOHIDOptionsTypeNone to capture events without interrupting the device
-            // Use kIOHIDOptionsTypeSeizeDevice to capture the device and all inputs
-            IOReturn result = IOHIDDeviceOpen(devices[i], kIOHIDOptionsTypeSeizeDevice);
-            if (result != kIOReturnSuccess)
-            {
-                printf("\nerror: IOHIDDeviceOpen: %s\n", getIOReturnString(result));
-                return 0;
-            }
-            device = devices[i];
-            // Register the input value callback
-            IOHIDDeviceRegisterInputValueCallback(
-                device,
-                macOSKeyboardInputValueCallback,
-                NULL);
-            getKeyDelays();
-            printf("success\n");
-            return 1;
+            preferredDevice = devices[i];
          }
+    }
+
+    if (preferredDevice) {
+        return captureKeyboard(preferredDevice);
     }
     return 0;
 }
@@ -93,6 +107,18 @@ static int isRepeatable(int code)
 {
     if (code == KEY_CAPSLOCK) {
         return 0;
+    }
+
+    if (code == KEY_ENTER) {
+        return 1;
+    }
+
+    if (code == KEY_DELETE) {
+        return 1;
+    }
+
+    if (code == KEY_BACKSPACE) {
+        return 1;
     }
 
     if (isModifier(code)) {
@@ -158,10 +184,19 @@ void macOSKeyboardInputValueCallback(
     IOHIDElementRef element = IOHIDValueGetElement(value);
     uint32_t code = IOHIDElementGetUsage(element);
     uint32_t down = (int)IOHIDValueGetIntegerValue(value);
-    //printf("input value callback: code=%d value=%d\n", code, down);
+    // ====== Uncomment for debugging =====
+    // printf("input value callback: code=%d value=%d\n", code, down);
     // If the HID Element Usage is outside the standard keyboard values, ignore it
     // See IOKit/hid/IOHIDUsageTables.h
     // Not entirely sure if this is correct, Fn is code 3, which is not in the usage tables...
+    if (isCheapAmazonKeyboard) {
+        if (code == /* backtick key */ 53) {
+            code = KEY_ESC;
+        } else if (code == 547) /* fn key + backtick key */ {
+            code = 53; /* backtick key*/
+        }
+    }
+
     if (code <= 2 || 232 <= code)
     {
         return;
