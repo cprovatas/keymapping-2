@@ -40,6 +40,10 @@ int createCGEventSource(void)
     return 1;
 }
 
+bool isShiftPressed(void) {
+    return (modifiers & NX_SHIFTMASK) != 0;
+}
+
 /**
  * Call back for mouse events. Adds modifier flags to the events.
  */

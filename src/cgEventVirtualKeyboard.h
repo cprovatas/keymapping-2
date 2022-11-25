@@ -37,6 +37,8 @@ void sendCGEvent(int type, int code, int down);
 
 void setFilterCallback(int filterCallback(int, int));
 
+bool isShiftPressed(void);
+
 void setApplicationWindow();
 
 #endif
