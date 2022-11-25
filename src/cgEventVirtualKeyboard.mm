@@ -40,8 +40,10 @@ int createCGEventSource(void)
     return 1;
 }
 
-bool isShiftPressed(void) {
-    return (modifiers & NX_SHIFTMASK) != 0;
+bool isShiftOrCommandPressed(void) {
+    return
+       (modifiers & NX_SHIFTMASK) != 0
+    || (modifiers & NX_COMMANDMASK) != 0;
 }
 
 /**

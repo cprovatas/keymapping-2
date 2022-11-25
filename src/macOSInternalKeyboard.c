@@ -190,8 +190,8 @@ void macOSKeyboardInputValueCallback(
     // See IOKit/hid/IOHIDUsageTables.h
     // Not entirely sure if this is correct, Fn is code 3, which is not in the usage tables...
     if (isCheapAmazonKeyboard) {
-        bool shiftPressed = isShiftPressed();
-        if (code == /* backtick key */ 53 && !shiftPressed) {
+        bool shiftOrCommandPressed = isShiftOrCommandPressed();
+        if (code == /* backtick key */ 53 && !shiftOrCommandPressed) {
             code = KEY_ESC;
         } else if (code == 547) /* fn key + backtick key */ {
             code = 53; /* backtick key*/
