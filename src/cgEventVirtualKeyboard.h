@@ -33,7 +33,7 @@ void setModifierUp(int code);
 /**
  * Sends a key event using CGEventPost.
  */
-void sendCGEvent(int type, int code, int down);
+void sendCGEvent(int code, int down);
 
 void setFilterCallback(int filterCallback(int, int));
 

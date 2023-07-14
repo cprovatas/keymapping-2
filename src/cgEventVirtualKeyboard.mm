@@ -393,7 +393,7 @@ void setFilterCallback(int filterCallback(int, int)) {
 /**
  * Sends a key event using CGEventPost.
  */
-void sendCGEvent(int type, int code, int value)
+void sendCGEvent(int code, int value)
 {
     // check modifiers ok
     if (!cgEventSource)
@@ -402,24 +402,58 @@ void sendCGEvent(int type, int code, int value)
         return;
     }
 
-    if (code == KEY_CAPSLOCK) {
-        if (isDown(value))
+    if (code == KEY_CAPSLOCK && isDown(value)) {
+        if (modifiers & kCGEventFlagMaskAlphaShift)
         {
-            if (modifiers & kCGEventFlagMaskAlphaShift)
-            {
-                modifiers &= ~kCGEventFlagMaskAlphaShift;
-            }
-            else
-            {
-                modifiers |= kCGEventFlagMaskAlphaShift;
-            }
+            modifiers &= ~kCGEventFlagMaskAlphaShift;
+        }
+        else
+        {
+            modifiers |= kCGEventFlagMaskAlphaShift;
         }
     }
+    
+    // Delete line with command + D
+    if (
+        code == KEY_D
+        && isDown(value)
+        && (modifiers & NX_DEVICELCMDKEYMASK) != 0
+    ) {
+        int currentModifiers = modifiers;
+        modifiers = 0;
+        
+        // move cursor to left
+        setModifierDown(KEY_LEFTCTRL);
+        sendCGEvent(KEY_A, 1);
+        sendCGEvent(KEY_A, 0);
+        setModifierUp(KEY_LEFTCTRL);
+        
+        // select text
+        setModifierDown(KEY_LEFTMETA);
+        setModifierDown(KEY_LEFTSHIFT);
+                
+        sendCGEvent(KEY_RIGHT, 1);
+        sendCGEvent(KEY_RIGHT, 0);
+        setModifierUp(KEY_LEFTMETA);
+        setModifierUp(KEY_LEFTSHIFT);
+        
+        // delete line
+        sendCGEvent(KEY_BACKSPACE, 1);
+        sendCGEvent(KEY_BACKSPACE, 0);
 
-    //printf("sendCGEvent: type=%i code=%i value=%i\n", type, code, value);
-    // Update the modifier state
+        // go to previous line
+        sendCGEvent(KEY_BACKSPACE, 1);
+        sendCGEvent(KEY_BACKSPACE, 0);
+        
+        modifiers = currentModifiers;
+        return;
+    }
+    
+    // printf("sendCGEvent: code=%i value=%i\n", code, value);
+    
     if (isModifier(code) || code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)
     {
+        
         if (value)
         {
             setModifierDown(code);

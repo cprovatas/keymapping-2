@@ -136,8 +136,8 @@ static void* repeatLoop(void* arg)
     usleep(initialKeyRepeatDelay); // microseconds
     while (repeatThread == pthread_self())
     {
-        sendCGEvent(0, code, 0);
-        sendCGEvent(0, code, 1);
+        sendCGEvent(code, 0);
+        sendCGEvent(code, 1);
         usleep(keyRepeatDelay);
     }
     free(arg);
@@ -185,7 +185,7 @@ void macOSKeyboardInputValueCallback(
     uint32_t code = IOHIDElementGetUsage(element);
     uint32_t down = (int)IOHIDValueGetIntegerValue(value);
     // ====== Uncomment for debugging =====
-    // printf("input value callback: code=%d value=%d\n is_shift_pressed=%d", code, down, isShiftPressed());G
+    // printf("input value callback: code=%d value=%d\n", code, down);
     // If the HID Element Usage is outside the standard keyboard values, ignore it
     // See IOKit/hid/IOHIDUsageTables.h
     // Not entirely sure if this is correct, Fn is code 3, which is not in the usage tables...
@@ -203,7 +203,7 @@ void macOSKeyboardInputValueCallback(
         return;
     }
 
-    sendCGEvent(0, code, down);
+    sendCGEvent(code, down);
     // It seems like since we have captured the device, key repeat functionality is lost.
     // Here is my *probably bad* implementation of a key repeat.
     if (isRepeatable(code))
