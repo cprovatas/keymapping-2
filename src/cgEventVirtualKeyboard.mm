@@ -420,6 +420,10 @@ void sendCGEvent(int code, int value)
         && (modifiers & NX_DEVICELCMDKEYMASK) != 0
     ) {
         int currentModifiers = modifiers;
+        // go to previous line
+        sendCGEvent(KEY_BACKSPACE, 1);
+        sendCGEvent(KEY_BACKSPACE, 0);
+
         modifiers = 0;
         
         // move cursor to left
