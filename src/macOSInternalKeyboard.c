@@ -84,6 +84,7 @@ int bindMacOSInternalKeyboard(IOHIDManagerRef hidManager)
         // Check if this is the apple keyboard, expand this later to use a GUI selection
         uint32_t vendorID = getVendorID(devices[i]);
 
+        // printf("The uint32_t number is: %u\n", vendorID);
         if (vendorID == cheapAmazonKeyboardID) {
             preferredDevice = devices[i];
             isCheapAmazonKeyboard = true;
@@ -91,7 +92,9 @@ int bindMacOSInternalKeyboard(IOHIDManagerRef hidManager)
         else if (vendorID == appleVendorID && !preferredDevice)
         {
             preferredDevice = devices[i];
-         }
+        } else if (vendorID == appleM3MaxVendorID && !preferredDevice) {
+            preferredDevice = devices[i];
+        }
     }
 
     if (preferredDevice) {
