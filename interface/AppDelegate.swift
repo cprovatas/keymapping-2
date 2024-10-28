@@ -311,11 +311,14 @@ enum WindowPosition {
     case maximum
 }
 
-func setApplicationWindow(with position: WindowPosition) {
+func setApplicationWindow(
+    with position: WindowPosition,
+    using screen: NSScreen? = nil
+) {
     let workspace = NSWorkspace.shared
     guard
         let frontmostApplication = workspace.frontmostApplication ?? workspace.runningApplications.first(where: { $0.isActive }),
-        let screen = NSScreen.main
+        let screen = screen ?? KeyMapping.screen(for: frontmostApplication)
     else {
         return
     }
@@ -339,19 +342,42 @@ func setApplicationWindow(with position: WindowPosition) {
     var halfScreenSize = NSSize(width: screenFrame.size.width / 2, height: screenFrame.size.height)
     switch position {
         case .left:
+            let oldPosition = windowPosition(frontWindow)
+            let oldSize = windowSize(frontWindow)
             guard let size = AXValueCreate(sizeKey, &halfScreenSize) else { return }
             // Won't let me conditional cast.... 'Conditional downcast to CoreFoundation type 'AXUIElement' will always succeed'
             AXUIElementSetAttributeValue(frontWindow as! AXUIElement, kAXSizeAttribute as CFString, size)
 
             var position = screenFrame.origin
+            // Shift to the left screen if already in position
+            if
+                oldPosition.x == position.x,
+                oldSize != screenSize,
+                let leftScreen = screenToTheLeft(of: screen)
+            {
+                setApplicationWindow(with: .right, using: leftScreen)
+                return
+            }
+
             guard let positionValue = AXValueCreate(positionKey, &position) else { return }
             AXUIElementSetAttributeValue(frontWindow as! AXUIElement, kAXPositionAttribute as CFString, positionValue)
         case .right:
+            let oldPosition = windowPosition(frontWindow)
+            let oldSize = windowSize(frontWindow)
             guard let size = AXValueCreate(sizeKey, &halfScreenSize) else { return }
             // Won't let me conditional cast.... 'Conditional downcast to CoreFoundation type 'AXUIElement' will always succeed'
             AXUIElementSetAttributeValue(frontWindow as! AXUIElement, kAXSizeAttribute as CFString, size)
 
-            var position = CGPoint(x: screenFrame.origin.x + screenSize.width / 2, y: screenFrame.origin.y)
+            let newSize = windowSize(frontWindow)
+            var position = CGPoint(x: screenFrame.maxX - newSize.width, y: screenFrame.origin.y)
+            if // Shift to the right screen if already in position
+                oldPosition.x == position.x,
+                oldSize != screenSize,
+                let rightScreen = screenToTheRight(of: screen)
+            {
+                setApplicationWindow(with: .left, using: rightScreen)
+                return
+            }
             guard let positionValue = AXValueCreate(positionKey, &position) else { return }
             AXUIElementSetAttributeValue(frontWindow as! AXUIElement, kAXPositionAttribute as CFString, positionValue)
         case .maximum:
@@ -363,4 +389,110 @@ func setApplicationWindow(with position: WindowPosition) {
             // Won't let me conditional cast.... 'Conditional downcast to CoreFoundation type 'AXUIElement' will always succeed'
             AXUIElementSetAttributeValue(frontWindow as! AXUIElement, kAXSizeAttribute as CFString, size)
     }
+}
+
+func windowSize(_ window: CFTypeRef) -> CGSize {
+    var newSizeValue: CFTypeRef?
+    AXUIElementCopyAttributeValue(window as! AXUIElement, kAXSizeAttribute as CFString, &newSizeValue)
+
+    var newSize: CGSize = CGSize.zero
+    AXValueGetValue(newSizeValue as! AXValue, AXValueType.cgSize, &newSize)
+    return newSize
+}
+
+func windowPosition(_ window: CFTypeRef) -> CGPoint {
+    var newPositionValue: CFTypeRef?
+    AXUIElementCopyAttributeValue(window as! AXUIElement, kAXPositionAttribute as CFString, &newPositionValue)
+
+    var newPosition: CGPoint = CGPoint.zero
+    AXValueGetValue(newPositionValue as! AXValue, AXValueType.cgPoint, &newPosition)
+    return newPosition
+}
+
+func screenToTheRight(of screen: NSScreen) -> NSScreen? {
+    // Get the frame of the input screen
+    let targetFrame = screen.frame
+
+    // Filter all screens that are positioned to the right of the given screen
+    let screensToRight = NSScreen.screens.filter { otherScreen in
+        let otherFrame = otherScreen.frame
+
+        // Check if the other screen is to the right of the target screen (considering overlaps)
+        return otherFrame.minX >= targetFrame.maxX
+    }
+
+    // Get the screen with the smallest `minX`, which is the closest to the right of the target screen
+    return screensToRight.min { $0.frame.minX < $1.frame.minX }
+}
+
+func screenToTheLeft(of screen: NSScreen) -> NSScreen? {
+    // Get the frame of the input screen
+    let targetFrame = screen.frame
+
+    // Filter all screens that are positioned to the left of the given screen
+    let screensToLeft = NSScreen.screens.filter { otherScreen in
+        let otherFrame = otherScreen.frame
+
+        // Check if the other screen is to the left of the target screen (considering overlaps)
+        return otherFrame.maxX <= targetFrame.minX
+    }
+
+    // Get the screen with the largest `maxX`, which is the closest to the left of the target screen
+    return screensToLeft.max { $0.frame.maxX < $1.frame.maxX }
+}
+
+func screen(for app: NSRunningApplication) -> NSScreen? {
+    let pid = app.processIdentifier
+    // Get the list of all windows
+    guard
+        let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]]
+    else {
+        return nil
+    }
+
+    for window in windowList {
+        // Filter based on the application's PID
+        // Get window bounds
+        guard
+            let windowPID = window[kCGWindowOwnerPID as String] as? pid_t,
+            windowPID == pid,
+            let boundsDict = window[kCGWindowBounds as String] as? [String: CGFloat]
+        else {
+            continue
+        }
+
+        let windowRect = CGRect(
+            x: boundsDict["X"] ?? 0,
+            y: boundsDict["Y"] ?? 0,
+            width: boundsDict["Width"] ?? 0,
+            height: boundsDict["Height"] ?? 0
+        )
+
+        // Check against screens
+        var chosenScreen: NSScreen?
+        var maxIntersectionArea: CGFloat = 0
+
+        for screen in NSScreen.screens {
+            let intersectionRect = screen.frame.intersection(windowRect)
+            let intersectionArea = intersectionRect.width * intersectionRect.height
+
+            if intersectionArea > maxIntersectionArea {
+                maxIntersectionArea = intersectionArea
+                chosenScreen = screen
+            }
+        }
+
+        if let screen = chosenScreen {
+            return screen
+        }
+
+        // Fallback to the original behavior if no intersection is found
+        for screen in NSScreen.screens {
+            if screen.frame.intersects(windowRect) {
+                return screen
+            }
+        }
+    }
+
+    return nil
 }
