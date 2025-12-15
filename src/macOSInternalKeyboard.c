@@ -67,40 +67,86 @@ int captureKeyboard(IOHIDDeviceRef inDevice) {
     return 1;
 }
 
+bool isInternalKeyboard(IOHIDDeviceRef device)
+{
+    CFStringRef transport =
+        IOHIDDeviceGetProperty(device, CFSTR(kIOHIDTransportKey));
+
+    // Internal Mac keyboards are SPI
+    if (transport && CFStringCompare(transport, CFSTR("SPI"), 0) == kCFCompareEqualTo) {
+        return true;
+    }
+
+    CFTypeRef builtIn =
+        IOHIDDeviceGetProperty(device, CFSTR(kIOHIDBuiltInKey));
+
+    if (builtIn && CFGetTypeID(builtIn) == CFBooleanGetTypeID()) {
+        return CFBooleanGetValue(builtIn);
+    }
+
+    return false;
+}
+
 /**
  * Binds the macOS internal keyboard.
  */
 int bindMacOSInternalKeyboard(IOHIDManagerRef hidManager)
 {
-    // Get set of devices
     CFSetRef deviceSet = IOHIDManagerCopyDevices(hidManager);
+    if (!deviceSet) return 0;
+
     CFIndex deviceCount = CFSetGetCount(deviceSet);
     IOHIDDeviceRef* devices = calloc(deviceCount, sizeof(IOHIDDeviceRef));
     CFSetGetValues(deviceSet, (const void **)devices);
-    IOHIDDeviceRef preferredDevice = NULL;
-    // Iterate devices
+
+    int boundCount = 0;
+
     for (CFIndex i = 0; i < deviceCount; i++)
     {
-        // Check if this is the apple keyboard, expand this later to use a GUI selection
-        uint32_t vendorID = getVendorID(devices[i]);
+        IOHIDDeviceRef dev = devices[i];
+        uint32_t vendorID = getVendorID(dev);
 
-        // printf("The uint32_t number is: %u\n", vendorID);
-        if (vendorID == cheapAmazonKeyboardID) {
-            preferredDevice = devices[i];
-            isCheapAmazonKeyboard = true;
-        }
-        else if (vendorID == appleVendorID && !preferredDevice)
+        printf("keyboard device detected: vendor=%d\n", vendorID);
+
+        // Optional: filter to keyboards only
+        CFNumberRef usagePageRef =
+            IOHIDDeviceGetProperty(dev, CFSTR(kIOHIDPrimaryUsagePageKey));
+        CFNumberRef usageRef =
+            IOHIDDeviceGetProperty(dev, CFSTR(kIOHIDPrimaryUsageKey));
+
+        int usagePage = 0, usage = 0;
+        if (!usagePageRef || !usageRef ||
+            !CFNumberGetValue(usagePageRef, kCFNumberIntType, &usagePage) ||
+            !CFNumberGetValue(usageRef, kCFNumberIntType, &usage))
         {
-            preferredDevice = devices[i];
-        } else if (vendorID == appleM3MaxVendorID && !preferredDevice) {
-            preferredDevice = devices[i];
+            continue;
+        }
+
+        if (usagePage != kHIDPage_GenericDesktop ||
+            usage != kHIDUsage_GD_Keyboard)
+        {
+            continue;
+        }
+
+        bool internal = isInternalKeyboard(dev);
+
+        if (internal) {
+            printf(" → internal keyboard\n");
+        } else {
+            printf(" → external keyboard\n");
+            if (vendorID == cheapAmazonKeyboardID) {
+                isCheapAmazonKeyboard = true;
+            }
+        }
+
+        // Bind THIS keyboard
+        if (captureKeyboard(dev)) {
+            boundCount++;
         }
     }
 
-    if (preferredDevice) {
-        return captureKeyboard(preferredDevice);
-    }
-    return 0;
+    free(devices);
+    return boundCount;
 }
 
 /**
@@ -188,7 +234,7 @@ void macOSKeyboardInputValueCallback(
     uint32_t code = IOHIDElementGetUsage(element);
     uint32_t down = (int)IOHIDValueGetIntegerValue(value);
     // ====== Uncomment for debugging =====
-    // printf("input value callback: code=%d value=%d\n", code, down);
+     // printf("input value callback: code=%d value=%d\n", code, down);
     // If the HID Element Usage is outside the standard keyboard values, ignore it
     // See IOKit/hid/IOHIDUsageTables.h
     // Not entirely sure if this is correct, Fn is code 3, which is not in the usage tables...
