@@ -115,22 +115,15 @@ let filterCallback: @convention(c) (Int32, Int32) -> Int32 = { code, flags in
         return 1
     }
 
-    var bundleURLOfRunningApp: String?
-    if let runningAppWithName = NSWorkspace.shared.runningApplications.first(where: { runningApp in
-        guard let name = runningApp.localizedName else { return false }
-        return name.contains(appName)
-    }) {
-        bundleURLOfRunningApp = runningAppWithName.bundleURL?.path
-    }
+    let bundleURLOfRunningApp = runningApplicationBundlePath(forAppNamed: appName)
 
-    var commandResult: String?
     if let executablePathOfRunningApp = bundleURLOfRunningApp {
         openApplication(arguments: [executablePathOfRunningApp]) { result in
-            print("[Command Result] \(result)")
+            NSLog("[KMAP-RESOLVE] open result: %@", result)
         }
     } else {
         openApplication(arguments: ["-a", appName])  { result in
-            print("[Command Result] \(result)")
+            NSLog("[KMAP-RESOLVE] open result: %@", result)
         }
     }
 
@@ -284,6 +277,60 @@ func loadConfiguration() {
     } else {
         NSLog("Error loading config file.  Using hard-coded defaults instead")
     }
+}
+
+/// Resolves the on-disk bundle path of an already-running instance of `appName`.
+///
+/// We prefer an already-running instance over letting `open -a <name>` resolve the
+/// name, so that we re-activate the exact copy the user already has open rather
+/// than whichever one LaunchServices feels like picking (there are several Xcodes
+/// on this machine).
+///
+/// The matching has to be strict, and specifically it must never return an XPC
+/// service. `Quick Look Simulator.app` — buried inside QuickLookUI.framework — is
+/// the system's registered Viewer for `com.apple.xpc-service`, so handing `open`
+/// *any* `.xpc` path launches it. It is `.regular` and never quits, which is why
+/// this looked like a LaunchServices bug that needed a reboot.
+///
+/// This used to be `localizedName.contains(appName)`, which matched XPC services
+/// constantly:
+///   - "Simulator"   matched "SimulatorTrampoline" (CoreSimulator .xpc)
+///   - "ChatGPT.app" matched "Dock Extra (ChatGPT.app)" (Dock's per-app .xpc helper,
+///                   which embeds the .app-suffixed name in its display name)
+/// Either one resolved to a `.xpc` bundle and therefore opened Quick Look Simulator.
+func runningApplicationBundlePath(forAppNamed appName: String) -> String? {
+    // Config entries are written both ways ("Messages" and "Messages.app"), but
+    // `localizedName` never carries the extension.
+    let wantedName = appName.hasSuffix(".app") ? String(appName.dropLast(4)) : appName
+
+    let candidates = NSWorkspace.shared.runningApplications.filter { app in
+        guard
+            // Background agents, XPC services and .appex extensions are never
+            // something we want to hand to `open`.
+            app.activationPolicy == .regular,
+            let bundleURL = app.bundleURL,
+            bundleURL.pathExtension == "app",
+            // A bindable app is a top-level bundle, not one nested inside a
+            // framework or another app's bundle.
+            !bundleURL.pathComponents.dropLast().contains(where: {
+                $0.hasSuffix(".framework") || $0.hasSuffix(".app") || $0.hasSuffix(".xpc") || $0.hasSuffix(".appex")
+            }),
+            let name = app.localizedName
+        else {
+            return false
+        }
+
+        // Anchored, so we still match a version-suffixed name like "Charles 4",
+        // but never one that merely contains the binding ("Quick Look Simulator",
+        // "Dock Extra (ChatGPT.app)", "Google Messages").
+        return name.range(of: wantedName, options: [.caseInsensitive, .diacriticInsensitive, .anchored]) != nil
+    }
+
+    // Shortest name wins, so a plain "Xcode" beats "Xcode Previews".
+    let match = candidates.min(by: { ($0.localizedName?.count ?? .max) < ($1.localizedName?.count ?? .max) })
+    NSLog("[KMAP-RESOLVE] \"%@\" -> %@ (%d running candidates)",
+          appName, match?.bundleURL?.path ?? "no running match, falling back to `open -a`", candidates.count)
+    return match?.bundleURL?.path
 }
 
 // We have to use NSTask
